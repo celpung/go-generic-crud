@@ -90,7 +90,7 @@ import (
     "reflect"
 
     "github.com/gin-gonic/gin"
-    "github.com/your-username/go-generic-crud/crud_router"
+    "github.com/celpung/go-generic-crud/crud_router"
 
     "your-app/entity"
     "your-app/configs/mysql"
