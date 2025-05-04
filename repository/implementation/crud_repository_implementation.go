@@ -43,7 +43,7 @@ func (r *RepositoryStruct[T]) Read(page, limit int, sortBy string, conditions ma
 	for _, field := range preloadFields {
 		if field == "Users" || field == "User" || field == "CreatedUser" {
 			query = query.Preload(field, func(db *gorm.DB) *gorm.DB {
-				return db.Select("id, name, email, active, role, company_id, created_at, updated_at")
+				return db.Select("id, name, email, active, role, created_at, updated_at")
 			})
 		} else {
 			query = query.Preload(field, func(db *gorm.DB) *gorm.DB {
