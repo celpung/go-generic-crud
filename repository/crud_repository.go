@@ -17,7 +17,7 @@ type CrudRepositoryInterface[T any] interface {
 	Delete(id uint) error
 
 	// Search entities with string query on multiple fields
-	Search(query string, preloadFields ...string) ([]*T, error)
+	Search(query string, conditions map[string]any, preloadFields ...string) ([]*T, error)
 
 	// Count total entities (not deleted)
 	Count() (int64, error)

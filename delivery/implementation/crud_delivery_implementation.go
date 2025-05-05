@@ -294,25 +294,37 @@ func (d *DeliveryStruct[T]) Delete(c *gin.Context) {
 }
 
 func (d *DeliveryStruct[T]) Search(c *gin.Context) {
-	// Get the search query from the request
-	searchQuery := c.Query("query")
-	preloads := c.Query("include")
+	searchQuery := c.Query("q")
 
-	// Handle case where preloads might be null or not set
-	var preloadFields []string
-	if preloads != "" {
-		preloadFields = strings.Split(preloads, ",")
+	preloadFields := c.QueryArray("include")
+
+	conditions := make(map[string]any)
+
+	excludeKeys := map[string]bool{
+		"q":       true,
+		"include": true,
 	}
 
-	// Call the use case to search based on the query string
-	results, err := d.usecase.Search(searchQuery, preloadFields...)
+	for key, values := range c.Request.URL.Query() {
+		if !excludeKeys[key] && len(values) > 0 {
+			if values[0] == "" {
+				conditions[key] = ""
+			} else {
+				conditions[key] = values[0]
+			}
+		}
+	}
+
+	results, err := d.usecase.Search(searchQuery, conditions, preloadFields...)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	// Return the search results
-	c.JSON(http.StatusOK, results)
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data":    results,
+	})
 }
 
 func (d *DeliveryStruct[T]) Count(c *gin.Context) {

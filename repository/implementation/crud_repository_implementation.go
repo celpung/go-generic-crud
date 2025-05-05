@@ -126,8 +126,8 @@ func (r *RepositoryStruct[T]) Delete(id uint) error {
 	return r.DB.Model(&entity).Update("deleted_at", gorm.DeletedAt{Time: time.Now(), Valid: true}).Error
 }
 
-func (r *RepositoryStruct[T]) Search(query string, preloadFields ...string) ([]*T, error) {
-	var results []*T // Pastikan ini slice pointer
+func (r *RepositoryStruct[T]) Search(query string, conditions map[string]any, preloadFields ...string) ([]*T, error) {
+	var results []*T
 	entityType := reflect.TypeOf(new(T)).Elem()
 
 	var likeClauses []string
@@ -136,7 +136,6 @@ func (r *RepositoryStruct[T]) Search(query string, preloadFields ...string) ([]*
 	for i := 0; i < entityType.NumField(); i++ {
 		field := entityType.Field(i)
 
-		// Menghindari field yang tidak relevan untuk pencarian
 		if field.Type.Kind() == reflect.Ptr ||
 			(field.Type.Kind() == reflect.Struct && field.Type != reflect.TypeOf(time.Time{})) ||
 			field.Type.Kind() == reflect.Slice ||
@@ -144,13 +143,11 @@ func (r *RepositoryStruct[T]) Search(query string, preloadFields ...string) ([]*
 			continue
 		}
 
-		// Mendapatkan nama kolom
 		columnName := getColumnName(field)
 		if columnName == "" {
 			continue
 		}
 
-		// Menambahkan klausa pencarian
 		likeClauses = append(likeClauses, fmt.Sprintf("%s LIKE ?", columnName))
 		queryArgs = append(queryArgs, "%"+query+"%")
 	}
@@ -159,14 +156,28 @@ func (r *RepositoryStruct[T]) Search(query string, preloadFields ...string) ([]*
 		return results, nil
 	}
 
-	// Menjalankan query
 	dbQuery := r.DB.Where(strings.Join(likeClauses, " OR "), queryArgs...)
 
-	for _, field := range preloadFields {
-		dbQuery = dbQuery.Preload(field)
+	// Apply filter conditions
+	for key, val := range conditions {
+		dbQuery = dbQuery.Where(fmt.Sprintf("%s = ?", key), val)
 	}
 
-	// Hasil pencarian
+	// Apply preloads
+	// for _, field := range preloadFields {
+	// 	dbQuery = dbQuery.Preload(field)
+	// }
+
+	// Apply preloads (with restriction on User)
+	for _, field := range preloadFields {
+		if field == "Users" || field == "User" || field == "CreatedUser" {
+			continue
+		}
+		dbQuery = dbQuery.Preload(field, func(db *gorm.DB) *gorm.DB {
+			return db.Unscoped()
+		})
+	}
+
 	err := dbQuery.Find(&results).Error
 	return results, err
 }

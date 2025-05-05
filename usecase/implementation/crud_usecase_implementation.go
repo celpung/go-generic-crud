@@ -29,8 +29,8 @@ func (u *UsecaseStruct[T]) Delete(id uint) error {
 	return u.repository.Delete(id)
 }
 
-func (u *UsecaseStruct[T]) Search(query string, preloadFields ...string) ([]*T, error) {
-	return u.repository.Search(query, preloadFields...)
+func (u *UsecaseStruct[T]) Search(query string, conditions map[string]any, preloadFields ...string) ([]*T, error) {
+	return u.repository.Search(query, conditions, preloadFields...)
 }
 
 func (u *UsecaseStruct[T]) Count() (int64, error) {
